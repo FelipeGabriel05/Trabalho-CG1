@@ -34,10 +34,10 @@ public:
 
         ray r_obj(o, d);
 
-        if (!object->hit(r_obj, t_min, t_max, rec))
+        if (!object->hit(r_obj, t_min, t_max, rec)) {
             return false;
+        }
 
-        // transforma o ponto de interseção de volta
         rec.p = M * rec.p;
 
         mat4 normal_mat = transpose(Minv);

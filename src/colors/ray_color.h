@@ -13,23 +13,20 @@ vec4 reflect(const vec4& v, const vec4& n) {
     return v - 2 * dot(v,n) * n;
 }
 
-color ray_color(const ray& r, const hittable& world) {
+color ray_color(const ray& r, const hittable& world, const point4& light_pos, const color& I_A, const color& I_F) {
     hit_record rec;
 
     double tmin = 0.001;
-    if (!world.hit(r, tmin, std::numeric_limits<double>::infinity(), rec))
+    if (!world.hit(r, tmin, std::numeric_limits<double>::infinity(), rec)) {
         return color(0, 0, 0, 0);
-
-    point4 light_pos(-100, 140, -20, 1);
-
-    color I_A(0.3, 0.3, 0.3, 0.0);
-    color I_F(0.7, 0.7, 0.7, 0.0);
+    }
 
     color base_color;
-    if (rec.mat->tex)
+    if (rec.mat->tex) {
         base_color = rec.mat->tex->value(rec.u, rec.v, rec.p);
-    else
+    } else {
         base_color = rec.mat->K_dif;
+    }
 
     color ambient_color = I_A * base_color;
 
@@ -40,8 +37,9 @@ color ray_color(const ray& r, const hittable& world) {
     ray shadow_ray(shadow_origin, l);
     hit_record shadow_rec;
 
-    if (world.hit(shadow_ray, tmin, light_distance, shadow_rec))
+    if (world.hit(shadow_ray, tmin, light_distance, shadow_rec)) {
         return ambient_color;
+    }
 
     vec4 n = rec.normal;
     vec4 v = unit_vector(-r.direction());

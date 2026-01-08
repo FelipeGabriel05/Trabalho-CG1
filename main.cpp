@@ -14,7 +14,10 @@
 #include "src/transform/operations.h"
 #include "src/transform/transform.h"
 
+#include "src/camera/cam.h"
+
 #include <GL/freeglut.h>
+#define PI 3.14159265358979324
 
 //Global
 int nCol = 500;                 // número de colunas
@@ -59,12 +62,41 @@ void raycasting(void){
     
     double Dx = wJanela / nCol;     // Tamanho dos pixels da janela. DX e DY
     double Dy = hJanela / nLin;
-    point4 E(0,0,0,1);                // Olho do pintor     
+    
+    // -------- Câmera -------------
+    point4 E(0, 0, 0, 1);
+    point4 AT(0, 0, -200, 1);
+    vec4 Pup(0, 1, 0, 0);
 
-    // glClear(GL_COLOR_BUFFER_BIT);
-    hittable_list world;
+    // Base da câmera
+    vec4 kc = unit_vector(E - AT);
+    vec4 ic = unit_vector(cross(Pup, kc));
+    vec4 jc = cross(kc, ic);
+    
+    // Matriz mundo -> câmera
+    mat4 Mwc (
+        ic.x(), ic.y(), ic.z(), -dot(ic, E),
+        jc.x(), jc.y(), jc.z(), -dot(jc, E),
+        kc.x(), kc.y(), kc.z(), -dot(kc, E),
+        0,      0,      0,      1
+    ); 
 
-    // world.add(make_shared<sphere>(point4(0, 144, -200, 1.0), 20, material_esfera));
+    mat4 Mcw(
+        ic.x(), jc.x(), kc.x(), E.x(),
+        ic.y(), jc.y(), kc.y(), E.y(),
+        ic.z(), jc.z(), kc.z(), E.z(),
+        0,      0,      0,      1
+    );
+
+    // Definição de luz
+    point4 light_pos(-100, 140, -20, 1);
+    point4 light_c = Mwc * light_pos;
+    color I_A(0.3, 0.3, 0.3, 0.0);
+    color I_F(0.7, 0.7, 0.7, 0.0);
+
+    // cena
+    hittable_list world_cam;
+
     auto s = make_shared<sphere>(point4(0, 0, 0, 1.0), 1.0, material_esfera);
     mat4 T = translation(0, 100, -200);
     mat4 Tinv = translation_inverse(0, 100, -200);
@@ -75,25 +107,65 @@ void raycasting(void){
     // composição
     mat4 M = T * S;
     mat4 Minv = Sinv * Tinv;
-    auto esfera_movida = make_shared<transform>(
-        s,   // objeto original
-        M,        // matriz direta
-        Minv      // matriz inversa
+    world_cam.add(
+        add_object_camera(
+            s,
+            M,
+            Minv,
+            Mwc,
+            Mcw
+        )
     );
-    world.add(esfera_movida);
-
 
     //tree_data arvore = criar_arvore();
-    //world.add(make_shared<tree>(arvore));
+    //world_cam.add(make_shared<tree>(arvore));
     
-    //table_data m = criar_mesa();
-    //world.add(make_shared<mesa>(m));
+    // world_cam.add(make_shared<box_mesh>(point4(20, -55, -200, 1.0), 100, 20, 30, material_tampo));
+
+
+    auto box = make_shared<box_mesh>(
+    point4(0, 0, 0, 1.0),
+    100, 20, 30,
+    material_tampo
+    );
+    mat4 T1 = translation(20, -55, -200);
+    mat4 Tinv1 = translation_inverse(20, -55, -200);
+
+    double ang = (PI / 4);
+    mat4 R = rotationZ(ang);
+    mat4 Rinv = rotationZ_inv(ang);
+
+    mat4 M1    = T1 * R;
+    mat4 Minv1 = Rinv * Tinv1;
+
+    mat4 M_cam1    = Mwc * M1;
+    mat4 Minv_cam1 = Minv1 * Mcw;
+    auto box_rot = make_shared<transform>(
+        box,        // objeto original
+        M_cam1,     // matriz direta
+        Minv_cam1   // matriz inversa
+    );
+    world_cam.add(
+        add_object_camera(
+            box,
+            M1,
+            Minv1,
+            Mwc,
+            Mcw
+        )
+    );
+    world_cam.add(box_rot);
+
+    // table_data m = criar_mesa();
+    // world_cam.add(make_shared<mesa>(m));
     // Planos do cenário
-    world.add(make_shared<plane>(point4(0.0, -150, 0.0, 1.0), vec4(0.0, 1.0, 0.0, 0.0), material_chao));
-    world.add(make_shared<plane>(point4(200, -150, 0.0, 1.0), vec4(-1.0, 0.0, 0.0, 0.0), material_plano1));
-    world.add(make_shared<plane>(point4(200, -150, -400, 1.0), vec4(0.0, 0.0, 1.0, 0.0), material_plano1));
-    world.add(make_shared<plane>(point4(-200, -150, 0.0, 1.0), vec4(1.0, 0.0, 0.0, 0.0), material_plano1));
-    world.add(make_shared<plane>(point4(0.0, 150, 0.0, 1.0), vec4(0.0, -1.0, 0.0, 0.0), material_teto));
+
+    world_cam.add(add_plane_camera(point4(0.0, -150, 0.0, 1.0), vec4(0.0, 1.0, 0.0, 0.0), Mwc, material_chao));
+    world_cam.add(add_plane_camera(point4(200, -150, 0.0, 1.0), vec4(-1.0, 0.0, 0.0, 0.0), Mwc, material_plano1));
+    world_cam.add(add_plane_camera(point4(200, -150, -400, 1.0), vec4(0.0, 0.0, 1.0, 0.0), Mwc, material_plano1));
+    world_cam.add(add_plane_camera(point4(-200, -150, 0.0, 1.0), vec4(1.0, 0.0, 0.0, 0.0), Mwc, material_plano1));
+    world_cam.add(add_plane_camera(point4(0.0, 150, 0.0, 1.0), vec4(0.0, -1.0, 0.0, 0.0), Mwc, material_teto));
+
 
     // Loop linhas e colunas
     for (int l = 0; l < nLin; l++) {
@@ -103,15 +175,16 @@ void raycasting(void){
             double x = -wJanela/2.0 + Dx/2.0 + c*Dx;
             double z = -dJanela;
 
-            point4 pixelPos(x,y,z, 1);
-            vec4 dir = unit_vector(pixelPos - E); // direção do raio
-            ray r(E, dir);
+            point4 Pc(x,y,z, 1);
+            point4 Ec(0, 0, 0, 1);
+            vec4 dir = unit_vector(Pc - Ec); // direção do raio
+            ray r(Ec, dir);
 
             /*  Projeção ortográfica
                 vec4 dir(0, 0, -1);
                 ray r(pixelPos, dir);
             */
-            color pixel_color = ray_color(r, world);
+            color pixel_color = ray_color(r, world_cam, light_c, I_A, I_F);
             makePixel(l, c, pixel_color);
         }
     }

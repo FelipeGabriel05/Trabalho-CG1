@@ -40,7 +40,7 @@ tree_data criar_arvore() {
 table_data criar_mesa() {
     table_data mesa;
     mesa.centroBase_tampo = point4(20, -55, -200, 1.0);
-    mesa.largura_tampo = 250;
+    mesa.largura_tampo = 100;
     mesa.altura_tampo = 5;
     mesa.profundiade_tampo = 150;
     mesa.material_tampo  = material_tampo;
