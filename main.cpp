@@ -35,7 +35,7 @@ void makePixel(int row, int col, const color& pixel_color) {
     int flipped_row; 
     if(0 <= row && row < nLin && 0 <= col && col < nCol) {
         flipped_row = nLin - 1 - row; 
-        position = (flipped_row * nCol + col) * 3; 
+        position = (flipped_row * nCol + col) * 3;
         PixelBuffer[position] = int(255.999 * clamp(pixel_color.x(), 0.0, 1.0));
         PixelBuffer[position + 1] = int(255.999 * clamp(pixel_color.y(), 0.0, 1.0));
         PixelBuffer[position + 2] = int(255.999 * clamp(pixel_color.z(), 0.0, 1.0));
@@ -97,25 +97,19 @@ void raycasting(void){
     // cena
     hittable_list world_cam;
 
-    auto s = make_shared<sphere>(point4(0, 0, 0, 1.0), 1.0, material_esfera);
-    mat4 T = translation(0, 100, -200);
-    mat4 Tinv = translation_inverse(0, 100, -200);
+    // auto s = make_shared<sphere>(point4(0, 0, 0, 1.0), 1.0, material_esfera);
+    // Transform ts;
+    // ts.scale(40, 40, 40);
+    // ts.translate(0, 100, -200);
 
-    mat4 S = scale(40, 40, 40);
-    mat4 Sinv = scale_inv(40,40,40);
-
-    // composição
-    mat4 M = T * S;
-    mat4 Minv = Sinv * Tinv;
-    world_cam.add(
-        add_object_camera(
-            s,
-            M,
-            Minv,
-            Mwc,
-            Mcw
-        )
-    );
+    // world_cam.add(
+    //     add_object_camera(
+    //         s,
+    //         ts,
+    //         Mwc,
+    //         Mcw
+    //     )
+    // );
 
     //tree_data arvore = criar_arvore();
     //world_cam.add(make_shared<tree>(arvore));
@@ -128,33 +122,53 @@ void raycasting(void){
     100, 20, 30,
     material_tampo
     );
-    mat4 T1 = translation(20, -55, -200);
-    mat4 Tinv1 = translation_inverse(20, -55, -200);
+    Transform tb;
+    tb.rotateZ(PI / 4);
+    tb.translate(20, -55, -200);
 
-    double ang = (PI / 4);
-    mat4 R = rotationZ(ang);
-    mat4 Rinv = rotationZ_inv(ang);
-
-    mat4 M1    = T1 * R;
-    mat4 Minv1 = Rinv * Tinv1;
-
-    mat4 M_cam1    = Mwc * M1;
-    mat4 Minv_cam1 = Minv1 * Mcw;
-    auto box_rot = make_shared<transform>(
-        box,        // objeto original
-        M_cam1,     // matriz direta
-        Minv_cam1   // matriz inversa
-    );
     world_cam.add(
         add_object_camera(
             box,
-            M1,
-            Minv1,
+            tb,
             Mwc,
             Mcw
         )
     );
-    world_cam.add(box_rot);
+
+    // auto box1 = make_shared<box_mesh>(
+    //     point4(0, 0, 0, 1), 100, 100, 100, material_tampo
+    // );
+    // Transform tb1;
+    // tb1.shear_yz(PI/6);
+    // tb1.translate(-10, -30, -150);
+
+    // world_cam.add(
+    //     add_object_camera(
+    //         box1,
+    //         tb1,
+    //         Mwc, 
+    //         Mcw
+    //     )
+    // );
+
+    vec4 n = unit_vector(vec4(0, 1, 0, 0)); // plano 45° entre X e Y
+        auto box2 = make_shared<box_mesh>(
+        point4(0,0,0,1),
+        40,40,40,
+        material_tampo
+    );
+
+    Transform tf1;
+    tf1.reflect_arbitrary(n);
+    tf1.translate(0, 30, -150);
+
+    Transform tf2 = tf1;
+    tf2.reflect_arbitrary(n);
+    tf2.translate(40, 0, -150);
+
+    world_cam.add(add_object_camera(box2, tf1, Mwc, Mcw));
+    // world_cam.add(add_object_camera(box2, tf2, Mwc, Mcw));
+
 
     // table_data m = criar_mesa();
     // world_cam.add(make_shared<mesa>(m));

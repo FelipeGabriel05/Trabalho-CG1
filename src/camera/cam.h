@@ -13,15 +13,16 @@ inline mat4 remove_translation(const mat4& M) {
 
 shared_ptr<hittable> add_object_camera(
     const shared_ptr<hittable>& obj,
-    const mat4& M_obj,
-    const mat4& Minv_obj,
+    const Transform& T,
     const mat4& Mwc,
     const mat4& Mcw
 ) {
+    Transform Tc = T;
+    Tc.M = Mwc * Tc.M;
+    Tc.Minv = Tc.Minv * Mcw;
     return make_shared<transform> (
         obj, 
-        Mwc * M_obj,
-        Minv_obj * Mcw
+        Tc
     );
 }
 

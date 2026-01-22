@@ -78,27 +78,11 @@ inline mat4 translation(double tx, double ty, double tz) {
     return T;
 }
 
-inline mat4 translation_inverse(double tx, double ty, double tz) {
-    mat4 T;
-    T[0][3] = -tx;
-    T[1][3] = -ty;
-    T[2][3] = -tz;
-    return T;
-}
-
-inline mat4 scale(double sx, double sy, double sz) {
+inline mat4 m_scale(double sx, double sy, double sz) {
     mat4 S;
     S[0][0] = sx;
     S[1][1] = sy;
     S[2][2] = sz;
-    return S;
-}
-
-inline mat4 scale_inv(double sx, double sy, double sz) {
-    mat4 S;
-    S[0][0] = 1.0 / sx;
-    S[1][1] = 1.0 / sy;
-    S[2][2] = 1.0 / sz;
     return S;
 }
 
@@ -138,16 +122,70 @@ inline mat4 rotationZ(double angulo) {
     return R;
 }
 
-inline mat4 rotationX_inv(double angulo) {
-    return rotationX(-angulo);
+inline mat4 m_scale_inv(double sx, double sy, double sz) {
+    mat4 S;
+    S[0][0] = 1.0 / sx;
+    S[1][1] = 1.0 / sy;
+    S[2][2] = 1.0 / sz;
+    return S;
 }
 
-inline mat4 rotationY_inv(double angulo) {
-    return rotationY(-angulo);
+inline mat4 m_shear_xy(double xy) {
+    mat4 Sh;
+    Sh[0][1] = tan(xy);
+    return Sh;
 }
 
-inline mat4 rotationZ_inv(double angulo) {
-    return rotationZ(-angulo);
+inline mat4 m_shear_xz(double xz) {
+    mat4 Sh;
+    Sh[0][2] = tan(xz);
+    return Sh;
+}
+
+inline mat4 m_shear_yx(double yx) {
+    mat4 Sh;
+    Sh[1][0] = tan(yx);
+    return Sh;
+}
+
+inline mat4 m_shear_yz(double yz) {
+    mat4 Sh;
+    Sh[1][2] = tan(yz);
+    return Sh;
+}
+
+inline mat4 m_shear_zx(double zx) {
+    mat4 Sh;
+    Sh[2][0] = tan(zx);
+    return Sh;
+}
+
+inline mat4 m_shear_zy(double zy) {
+    mat4 Sh;
+    Sh[2][1] = tan(zy);
+    return Sh;
+}
+
+inline mat4 m_reflect_arbitrary(vec4 n) {
+    mat4 R;
+
+    double nx = n.x();
+    double ny = n.y();
+    double nz = n.z();
+
+    R[0][0] = 1 - 2*nx*nx; 
+    R[0][1] = -2 * nx * ny;
+    R[0][2] = -2 * nx * nz;
+
+    R[1][0] = -2 * ny * nx;
+    R[1][1] = 1 - 2 * ny*ny;
+    R[1][2] = -2 * ny * nz;
+
+    R[2][0] = -2 * nz * nx; 
+    R[2][1] = -2 * nz * ny;
+    R[2][2] = 1 - 2 * nz * nz;
+
+    return R;
 }
 
 #endif
