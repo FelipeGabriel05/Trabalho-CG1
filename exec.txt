@@ -1,2 +1,2 @@
 g++ main.cpp -o trabalho -lfreeglut -lopengl32 -lglu32
-./trabalho
+

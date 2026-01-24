@@ -21,6 +21,14 @@ class Transform {
             Minv = Minv * m_scale_inv(x, y, z);
         }
 
+        void rotateArbitrary(vec4 u, double teta) {
+            mat4 R = rotation_arbitrary(u, teta);
+            mat4 Rinv = transpose(R);
+
+            M = R * M;
+            Minv = Minv * Rinv;
+        }
+
         void rotateX(double a) {
             M = rotationX(a) * M;
             Minv = Minv * rotationX(-a);

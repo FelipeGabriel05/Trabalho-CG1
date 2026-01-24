@@ -122,6 +122,59 @@ inline mat4 rotationZ(double angulo) {
     return R;
 }
 
+inline mat4 rotation_arbitrary(vec4 u, double angulo) {
+    // Leve em consideração que o objeto a ser rotacionado está na origem
+    // Formulas para aplicar a primeira rotação que é em torno do eixo x.
+    // Depois dessa rotação: o eixo passa a estar no plano xz.
+    // Normalize o eixo
+    u = unit_vector(u);
+    double cosTetax;
+    double senTetax;
+    double a;
+
+    if(u.y() == 0.0 && u.z() == 0) { // é o próprio eixo x
+        a = 0.0;
+        cosTetax = 1.0;
+        senTetax = 0.0;
+    } else {
+        a = sqrt(u.y()* u.y() + u.z() * u.z());
+        cosTetax = u.z() / a;
+        senTetax = u.y() / a;
+    }
+    mat4 Rx;
+    Rx[1][1] = cosTetax;
+    Rx[1][2] = -senTetax;
+    Rx[2][1] = senTetax;
+    Rx[2][2] =  cosTetax;
+
+    // fórmula para aplicar a segunda rotação
+    double senTetay = u.x();
+    double cosTetay = a;
+    // Segunda rotação é em torno do eixo y
+    // Agora giramos em y para alinhar o eixo com o eixo z.
+    mat4 Ry;
+    Ry[0][0] = cosTetay;
+    Ry[0][2] = senTetay;
+    Ry[2][0] = -senTetay;
+    Ry[2][2] = cosTetay;
+
+    // Terceira rotação em torno do eixo z
+    mat4 Rz;
+    Rz[0][0] = cos(angulo);
+    Rz[0][1] = -sin(angulo);
+    Rz[1][0] = sin(angulo);
+    Rz[1][1] = cos(angulo);
+
+    mat4 RyInv = transpose(Ry);
+    mat4 RxInv = transpose(Rx);
+
+    mat4 resXY = Ry * Rx;
+    mat4 resZ = Rz * resXY;
+    mat4 resI1 = RyInv * resZ;
+    mat4 resI2 = RxInv * resI1;
+    return resI2;
+}
+
 inline mat4 m_scale_inv(double sx, double sy, double sz) {
     mat4 S;
     S[0][0] = 1.0 / sx;

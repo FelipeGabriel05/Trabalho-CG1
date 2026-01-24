@@ -1,19 +1,14 @@
-#ifndef RAY_COLOR_H
-#define RAY_COLOR_H
+#ifndef LUZ_PONTUAL_H
+#define LUZ_PONTUAL_H
 
 #include "../ray/ray.h"
 #include "../objects/hittable.h"
 #include "../colors/color.h"
 
-#include "ray_color.h"
 #include <limits>
 #include <cmath>
 
-vec4 reflect(const vec4& v, const vec4& n) {
-    return v - 2 * dot(v,n) * n;
-}
-
-color ray_color(const ray& r, const hittable& world, const point4& light_pos, const color& I_A, const color& I_F) {
+color luz_pontual(const ray& r, const hittable& world, const point4& light_pos, const color& I_A, const color& I_F) {
     hit_record rec;
 
     double tmin = 0.001;
