@@ -1,233 +1,198 @@
 #include <iostream>
-#include "src/ray/ray.h"
-#include "src/vectors/vec.h"
-#include "src/colors/color.h"
-#include "src/colors/luz_dir.h"
-#include "src/colors/luz_pontual.h"
-#include "src/colors/luz_spot.h"
+#include <algorithm>
+#include <GL/freeglut.h>
+#include <vector>
+#include <memory>
+#include <limits> 
 
+//Base Matemática e Raios
+#include "src/vectors/vec.h"
+#include "src/transform/operations.h"
+#include "src/ray/ray.h"
+
+//Cores e Iluminação
+#include "src/colors/color.h"
+// #include "src/colors/luz_dir.h" // Função substituída pela versão local
+#include "src/colors/luz_pontual.h" 
+#include "src/colors/luz_spot.h"    
+
+// Objetos e Malhas
 #include "src/objects/hittable.h"
 #include "src/objects/hittable_lists.h"
-#include "src/objects/plane.h"
-#include "src/cenario/materiais_cenario.h"
-#include "src/cenario/objetos_cenario.h"
-#include "src/cenario/arvore_natal.h"
-#include "src/cenario/mesa.h"
 #include "src/objects/sphere.h"
-#include "src/transform/operations.h"
-#include "src/transform/transform.h"
+#include "src/objects/cilindro.h"
+#include "src/objects/cone.h"
+#include "src/objects/plane.h"
+#include "src/malha/box_mesh.h"
 
+//Transformações e Câmera
+#include "src/transform/transform.h"
 #include "src/camera/cam.h"
 
-#include <GL/freeglut.h>
-#define PI 3.14159265358979324
+//Cenário
+#include "src/cenario/materiais_cenario.h" 
+#include "src/cenario/cenario_saojoao.h" 
 
-//Global
-int nCol = 500;                 // número de colunas
-int nLin = 500;                 // número de linhas
+//Variáveis Globais
+int nCol = 500;  
+int nLin = 500;
 GLubyte* PixelBuffer = nullptr;
 
-inline double clamp(double x, double min, double max) {
+//Config da Câmera ---
+point4 Eye(250, 150, -200, 1); 
+point4 At(250, 80, 400, 1);    
+vec4 Up(0, 1, 0, 0);
+double dist_focal = 40.0;    
+
+hittable_list world_cam;        
+
+//Função auxiliar para clamp
+inline double clamp_val(double x, double min, double max) {
     if (x < min) return min;
     if (x > max) return max;
     return x;
 }
 
-void makePixel(int row, int col, const color& pixel_color) {
-    int position; 
-    int flipped_row; 
-    if(0 <= row && row < nLin && 0 <= col && col < nCol) {
-        flipped_row = nLin - 1 - row; 
-        position = (flipped_row * nCol + col) * 3;
-        PixelBuffer[position] = int(255.999 * clamp(pixel_color.x(), 0.0, 1.0));
-        PixelBuffer[position + 1] = int(255.999 * clamp(pixel_color.y(), 0.0, 1.0));
-        PixelBuffer[position + 2] = int(255.999 * clamp(pixel_color.z(), 0.0, 1.0));
-    } 
-}
+//Função de Traçado de Raios com Fundo Gradiente
+color ray_color_with_sky(
+    const ray& r,
+    const hittable& world,
+    const vec4& light_dir, 
+    const color& I_A,
+    const color& I_F
+) {
+    hit_record rec;
+    const double eps = 1e-4;
 
-void raycasting(void){
-    // Limpar buffer se já existir
-    if(PixelBuffer == nullptr) {
-        PixelBuffer = new GLubyte[nCol * nLin * 3];
+    //Renderização do Fundo (Céu)
+    // Se o raio não atingir nenhum objeto, calcula a cor baseada na direção Y
+    if (!world.hit(r, eps, std::numeric_limits<double>::infinity(), rec)) {
+        vec4 unit_direction = unit_vector(r.direction());
+        double t = 0.5 * (unit_direction.y() + 1.0);
+
+        // Interpolação linear para gradiente (Azul Noturno)
+        return (1.0 - t) * color(0.1, 0.1, 0.4, 1.0)  // Cor do Horizonte
+             + t * color(0.02, 0.02, 0.1, 1.0);     // Cor do Zênite
     }
 
-    // Limpeza obrigatória
-    std::fill(
-        PixelBuffer,
-        PixelBuffer + nCol * nLin * 3,
-        0
-    );
+    //Cálculo do Material e Iluminação (Modelo de Phong)
+    color base_color = rec.mat->tex 
+        ? rec.mat->tex->value(rec.u, rec.v, rec.p) 
+        : rec.mat->K_dif;
 
-    // Definindo os parâmetros (FOV)
-    double fov = PI/2;   // 90 graus (campo de visão horizontal)
-    double aspect = (double)nCol / (double)nLin;  // razão de aspecto
-    double dJanela = 30.0;   // distância da janela (plano de projeção)
+    color ambient = I_A * base_color;
+    vec4 n = unit_vector(rec.normal);
+    vec4 l = unit_vector(light_dir); 
 
-    double wJanela = 2.0 * dJanela * tan(fov / 2.0);
-    double hJanela = wJanela / aspect;
+    double nl = dot(n, l);
 
-    double xmin = -wJanela / 2.0;
-    double xmax =  wJanela / 2.0;
-    double ymin = -hJanela / 2.0;
-    double ymax =  hJanela / 2.0;
+    // Se a normal estiver oposta à luz, apenas componente ambiente
+    if (nl <= 0.0) return ambient; 
 
+    // 3. Cálculo de Sombras
+    point4 shadow_origin = rec.p + n * eps;
+    ray shadow_ray(shadow_origin, l);
+    hit_record shadow_rec;
+
+    // Se o raio de sombra atingir um objeto, o ponto está ocluído
+    if (world.hit(shadow_ray, eps, 1e30, shadow_rec)) {
+        return ambient;
+    }
+
+    //Componentes Difusa e Especular
+    vec4 v = unit_vector(-r.direction());
+    vec4 rfl = unit_vector(reflect(-l, n));
+
+    double spec = pow(std::max(0.0, dot(v, rfl)), rec.mat->shininess);
     
-    double Dx = (xmax - xmin) / nCol;     // Tamanho dos pixels da janela. DX e DY
-    double Dy = (ymax - ymin) / nLin;
-    
-    // -------- Câmera -------------
-    point4 E(0, 0, 0, 1);
-    point4 AT(0, 0, -200, 1);
-    vec4 Pup(0, 1, 0, 0);
+    color I_d = I_F * base_color * nl;
+    color I_e = I_F * rec.mat->K_esp * spec;
 
-    // Base da câmera
-    vec4 kc = unit_vector(E - AT);
-    vec4 ic = unit_vector(cross(Pup, kc));
+    return ambient + I_d + I_e;
+}
+
+void raycasting() {
+    if(PixelBuffer == nullptr) PixelBuffer = new GLubyte[nCol * nLin * 3];
+    // Limpeza do buffer
+    for(int i=0; i<nCol*nLin*3; ++i) PixelBuffer[i] = 0;
+
+    double wJanela = 60.0; 
+    double hJanela = 60.0;
+    double Dx = wJanela / nCol; 
+    double Dy = hJanela / nLin;
+    
+    // Sistema de coordenadas da câmera
+    vec4 kc = unit_vector(Eye - At);
+    vec4 ic = unit_vector(cross(Up, kc));
     vec4 jc = cross(kc, ic);
     
-    // Matriz mundo -> câmera
-    mat4 Mwc (
-        ic.x(), ic.y(), ic.z(), -dot(ic, E),
-        jc.x(), jc.y(), jc.z(), -dot(jc, E),
-        kc.x(), kc.y(), kc.z(), -dot(kc, E),
-        0,      0,      0,      1
-    ); 
+    // Matriz World-to-Camera
+    mat4 Mwc(ic.x(), ic.y(), ic.z(), -dot(ic, Eye),
+             jc.x(), jc.y(), jc.z(), -dot(jc, Eye),
+             kc.x(), kc.y(), kc.z(), -dot(kc, Eye),
+             0,      0,      0,      1); 
 
-    mat4 Mcw(
-        ic.x(), jc.x(), kc.x(), E.x(),
-        ic.y(), jc.y(), kc.y(), E.y(),
-        ic.z(), jc.z(), kc.z(), E.z(),
-        0,      0,      0,      1
-    );
+    // Matriz Camera-to-World
+    mat4 Mcw(ic.x(), jc.x(), kc.x(), Eye.x(),
+             ic.y(), jc.y(), kc.y(), Eye.y(),
+             ic.z(), jc.z(), kc.z(), Eye.z(),
+             0,      0,      0,      1);
 
-    // Definição de luz
-    // point4 light_pos(-100, 140, -20, 1);
-    point4 light_pos(0, 0, 0, 1);           // posição da luz
+    //Config da Luz Direcional (lua)
+    vec4 moon_direction_world = unit_vector(vec4(0.2, 1.0, 0.5, 0));
+    vec4 moon_direction_cam = unit_vector(Mwc * moon_direction_world);
 
-    // direção da luz NO MUNDO
-    vec4 light_dir = unit_vector(vec4(0, 0, -1, 0)); // Nesse cenário o centro está no z negativo
-    double arbertura = PI / 6;
-    color I_A(0.3, 0.3, 0.3, 0.0);
-    color I_F(0.7, 0.7, 0.7, 0.0);
+    // Intensidades da luz (Ambiente e Fonte)
+    color I_A(0.3, 0.3, 0.4, 0.0);       
+    color I_F(0.7, 0.7, 0.8, 0.0);       
 
-    // cena
-    hittable_list world_cam;
+    // Montagem do cenário
+    world_cam.clear();
+    montar_sao_joao(world_cam, Mwc, Mcw);
 
-    auto s = make_shared<sphere>(point4(0, 0, 0, 1.0), 1.0, material_esfera);
-    Transform ts;
-    ts.scale(40, 40, 40);
-    ts.translate(0, 100, -200);
-
-    world_cam.add(
-        add_object_camera(
-            s,
-            ts,
-            Mwc,
-            Mcw
-        )
-    );
-
-    //tree_data arvore = criar_arvore();
-    //world_cam.add(make_shared<tree>(arvore));
-    
-    // world_cam.add(make_shared<box_mesh>(point4(20, -55, -200, 1.0), 100, 20, 30, material_tampo));
-
-
-    auto box = make_shared<box_mesh>(
-    point4(0, 0, 0, 1.0),
-    100, 20, 30,
-    material_tampo
-    );
-    Transform tb;
-    vec4 eixo = vec4(0, 0, 1, 0);
-    tb.rotateArbitrary(eixo, PI / 4);
-    // tb.rotateZ(PI / 4);
-    tb.translate(20, -55, -200);
-
-    world_cam.add(
-        add_object_camera(
-            box,
-            tb,
-            Mwc,
-            Mcw
-        )
-    );
-
-    // auto box1 = make_shared<box_mesh>(
-    //     point4(0, 0, 0, 1), 100, 100, 100, material_tampo
-    // );
-    // Transform tb1;
-    // tb1.shear_yz(PI/6);
-    // tb1.translate(-10, -30, -150);
-
-    // world_cam.add(
-    //     add_object_camera(
-    //         box1,
-    //         tb1,
-    //         Mwc, 
-    //         Mcw
-    //     )
-    // );
-
-    vec4 n = unit_vector(vec4(0, 1, 0, 0)); // plano 45° entre X e Y
-        auto box2 = make_shared<box_mesh>(
-        point4(0,0,0,1),
-        40,40,40,
-        material_tampo
-    );
-
-    Transform tf1;
-    tf1.reflect_arbitrary(n);
-    tf1.translate(0, 30, -150);
-
-    Transform tf2 = tf1;
-    tf2.reflect_arbitrary(n);
-    tf2.translate(40, 0, -150);
-
-    // world_cam.add(add_object_camera(box2, tf1, Mwc, Mcw));
-    // world_cam.add(add_object_camera(box2, tf2, Mwc, Mcw));
-
-
-    // table_data m = criar_mesa();
-    // world_cam.add(make_shared<mesa>(m));
-    // Planos do cenário
-
-    world_cam.add(add_plane_camera(point4(0.0, -150, 0.0, 1.0), vec4(0.0, 1.0, 0.0, 0.0), Mwc, material_chao));
-    world_cam.add(add_plane_camera(point4(200, -150, 0.0, 1.0), vec4(-1.0, 0.0, 0.0, 0.0), Mwc, material_plano1));
-    world_cam.add(add_plane_camera(point4(200, -150, -400, 1.0), vec4(0.0, 0.0, 1.0, 0.0), Mwc, material_plano1));
-    world_cam.add(add_plane_camera(point4(-200, -150, 0.0, 1.0), vec4(1.0, 0.0, 0.0, 0.0), Mwc, material_plano1));
-    world_cam.add(add_plane_camera(point4(0.0, 150, 0.0, 1.0), vec4(0.0, -1.0, 0.0, 0.0), Mwc, material_teto));
-
-
-    
-    // Loop linhas e colunas
+    // Loop de renderização
+    #pragma omp parallel for
     for (int l = 0; l < nLin; l++) {
-        double y =  ymax - Dy/2.0 - l*Dy;
+        double y = hJanela/2.0 - Dy/2.0 - l*Dy;
         for (int c = 0; c < nCol; c++) {
-            // Coordenadas do centro da célula
-            double x = xmin + Dx/2.0 + c*Dx;
-            double z = -dJanela;
+            double x = -wJanela/2.0 + Dx/2.0 + c*Dx;
+            double z = -dist_focal; 
 
-            point4 Pc(x,y,z, 1);
-            point4 Ec(0, 0, 0, 1);
-            vec4 dir = unit_vector(Pc - Ec); // direção do raio
+            point4 Pc(x, y, z, 1); 
+            point4 Ec(0, 0, 0, 1);  
+            vec4 dir = unit_vector(Pc - Ec); 
             ray r(Ec, dir);
 
-            /*  Projeção ortográfica
-                vec4 dir(0, 0, -1);
-                ray r(pixelPos, dir);
-            */
-            // color pixel_color = luz_pontual(r, world_cam, light_pos, I_A, I_F); // ok
-            color pixel_color = luz_spot(r, world_cam, light_pos, light_dir, arbertura, I_A, I_F);
-            // color pixel_color = ray_color_dir(r, world_cam, light_dir, I_A, I_F); //ok
-            makePixel(l, c, pixel_color);
+            // Chamada da função de cor personalizada
+            color pixel_color = ray_color_with_sky(r, world_cam, moon_direction_cam, I_A, I_F);
+            
+            int flipped_row = nLin - 1 - l;
+            int position = (flipped_row * nCol + c) * 3;
+            PixelBuffer[position]     = int(255.99 * clamp_val(pixel_color.x(), 0.0, 1.0));
+            PixelBuffer[position + 1] = int(255.99 * clamp_val(pixel_color.y(), 0.0, 1.0));
+            PixelBuffer[position + 2] = int(255.99 * clamp_val(pixel_color.z(), 0.0, 1.0));
         }
     }
 }
 
+void mouse(int button, int state, int x, int y) {
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+        std::cout << "Clique: " << x << ", " << y << std::endl;
+    }
+}
+
 void keyboard(unsigned char key, int mousex, int mousey) {
-    if(key == 'w'|| key == 'W')
-        exit(0);
+    if(key == 27) exit(0); 
+    
+    // Controle de Zoom
+    if(key == 'w' || key == 'W') dist_focal += 5; 
+    if(key == 's' || key == 'S') dist_focal -= 5; 
+    
+    if(key == 'w' || key == 's' || key == 'W' || key == 'S') {
+        std::cout << "Zoom: " << dist_focal << std::endl;
+        raycasting(); 
+        glutPostRedisplay();    
+    }
 }
 
 void display() {
@@ -236,27 +201,23 @@ void display() {
     glFlush();
 }
 
-void cleanup() {
-    if(PixelBuffer != nullptr) {
-        delete[] PixelBuffer;
-        PixelBuffer = nullptr;
-    }
-}
+void cleanup() { if(PixelBuffer != nullptr) delete[] PixelBuffer; }
 
 int main(int argc, char **argv) {
     glutInit(&argc, argv);
-
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
     glutInitWindowSize(nCol, nLin);
-    glutInitWindowPosition(0, 0);
+    glutInitWindowPosition(100, 100);
+    glutCreateWindow("Cenario de Sao Joao - Noite");
+    
+    std::cout << "Renderizando..." << std::endl;
+    raycasting(); 
 
-    glutCreateWindow("Trabalho final");
-    raycasting();
-    glutKeyboardFunc(keyboard);
+    glutKeyboardFunc(keyboard); 
+    glutMouseFunc(mouse); 
     glutDisplayFunc(display);
-
-    // Registrar função de limpeza
-    atexit(cleanup);
-
+    
+    atexit(cleanup); 
     glutMainLoop();
+    return 0;
 }

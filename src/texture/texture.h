@@ -1,10 +1,12 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
+
 #include "../vectors/vec.h"
 #include "../colors/color.h"
 #include "rtw_stb_image.h"
 #include <algorithm>
 #include <memory>
+#include <cmath>
 
 class texture {
     public:
@@ -55,15 +57,27 @@ class image_texture : public texture {
     image_texture(const char* filename) : image(filename) {}
 
     color value(double u, double v, const point4& p) const override {
-        // If we have no texture data, then return solid cyan as a debugging aid.
+        // Se não tiver dados de textura, retorna ciano sólido para debug.
         if (image.height() <= 0) return color(0,1,1,0);
 
-        // Clamp input texture coordinates to [0,1] x [1,0]
-        u = std::clamp(u, 0.0, 1.0);
-        v = 1.0 - std::clamp(v, 0.0, 1.0);
+        // Clamp manual das coordenadas de textura para [0,1] x [1,0]
+        // Substitui o std::clamp que estava dando erro
+        if (u < 0.0) u = 0.0;
+        if (u > 1.0) u = 1.0;
+
+        if (v < 0.0) v = 0.0;
+        if (v > 1.0) v = 1.0;
+        
+        // Inverte V para coordenadas de imagem
+        v = 1.0 - v;
 
         auto i = int(u * image.width());
         auto j = int(v * image.height());
+
+        // Garante que i e j não estourem os limites da imagem
+        if (i >= image.width())  i = image.width() - 1;
+        if (j >= image.height()) j = image.height() - 1;
+
         auto pixel = image.pixel_data(i,j);
 
         auto color_scale = 1.0 / 255.0;
