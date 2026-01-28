@@ -75,11 +75,9 @@ class Transform {
         }
 
         void reflect_arbitrary(vec4 n) {
-            // mat4 R = m_reflect_arbitrary(n);
-            // M = R * M;
-            // Minv = Minv * R; // reflexão é sua própria inversa
-            M = m_reflect_arbitrary(n) * M;
-            Minv = M;
+            mat4 R = m_reflect_arbitrary(n);
+            M = R * M;
+            Minv = Minv * R; // reflexão é sua própria inversa
         }
 };
 

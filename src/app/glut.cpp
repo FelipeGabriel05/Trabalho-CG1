@@ -97,8 +97,6 @@ void mouse_click(int button, int state, int x, int y)
     default:
         std::cout << "Desconhecido\n";
     }
-    needs_render = true;
-    glutPostRedisplay();
 }
 
 void keyboard(unsigned char key, int, int) {

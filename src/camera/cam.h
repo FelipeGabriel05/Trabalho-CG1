@@ -20,7 +20,6 @@ inline point4 pixel_to_camera(int i, int j)
     double x = xmin + Dx * (j + 0.5);
     double y = ymax - Dy/2.0 - i * Dy;
     double z = -dJanela;
-
     return point4(x, y, z, 1.0);
 }
 
@@ -34,6 +33,27 @@ inline ray generate_ray(int i, int j)
     return ray(Oc, dir);
 }
 
+// pixel (i,j) -> ponto no plano da câmera (ortográfica)
+inline point4 pixel_to_camera_ortografica(int i, int j)
+{
+    double Dx = (xmax - xmin) / nCol;
+    double Dy = (ymax - ymin) / nLin;
+
+    double x = xmin + Dx * (j + 0.5);
+    double y = ymax - Dy * (i + 0.5);
+    double z = 0.0;
+
+    return point4(x, y, z, 1.0);
+}
+
+// raio ortográfico
+inline ray generate_ray_ortografica(int i, int j)
+{
+    point4 origin = pixel_to_camera_ortografica(i, j);
+    vec4 dir(0, 0, 1, 0);
+
+    return ray(origin, dir);
+}
 
 inline mat4 remove_translation(const mat4& M) {
     mat4 R = M;

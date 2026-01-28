@@ -17,6 +17,7 @@
 #include "src/transform/operations.h"
 #include "src/transform/transform.h"
 #include "src/app/glut.h"
+#include "src/cenario/cenario_saojoao.h"
 
 #include "src/camera/cam.h"
 
@@ -56,7 +57,7 @@ void raycasting(void){
     // Definindo os parâmetros (FOV)
     double fov = PI/2;   // 90 graus (campo de visão horizontal)
     double aspect = (double)nCol / (double)nLin;  // razão de aspecto
-    dJanela = 30.0;   // distância da janela (plano de projeção)
+    dJanela = 40.0;   // distância da janela (plano de projeção)
 
     double wJanela = 2.0 * dJanela * tan(fov / 2.0);
     double hJanela = wJanela / aspect;
@@ -67,8 +68,8 @@ void raycasting(void){
     ymax =  hJanela / 2.0;
     
     // -------- Câmera -------------
-    E = point4(0, 0, 0, 1);
-    point4 AT(0, 0, -200, 1);
+    E = point4(250, 150, -200, 1);
+    point4 AT(250, 80, 400, 1);
     vec4 Pup(0, 1, 0, 0);
 
     // Base da câmera
@@ -94,112 +95,16 @@ void raycasting(void){
         0,      0,      0,      1
     );
 
+    //Config da Luz Direcional (lua)
+    vec4 moon_direction_world = unit_vector(vec4(0.2, 1.0, 0.5, 0));
+    vec4 moon_direction_cam = unit_vector(Mwc * moon_direction_world);
+
+
     // cena
     g_world = &world_cam;
 
-    auto s = make_shared<sphere>(point4(0, 0, 0, 1.0), 10.0, material_esfera);
-    Transform ts;
-    // ts.scale(40, 40, 40);
-    ts.translate(0, 100, -200);
-
-    world_cam.add(
-        add_object_camera(
-            s,
-            ts,
-            Mwc,
-            Mcw
-        )
-    );
-
-    auto co = make_shared<cone>(point4(0, 0, 0, 1.0), vec4(0, 1, 0, 0), 150, 90, true, material_cone);
-    Transform Tco;
-    Tco.translate(0, -60, -200);
-    world_cam.add(
-        add_object_camera(
-            co, Tco, Mwc, Mcw
-        )
-    ); 
-    
-    auto ci = make_shared<cilindro>(point4(0, 0, 0, 1.0), vec4(0, 1, 0, 1), 90, 5, true, false, material_cilindro);
-    Transform Tci;
-    Tci.translate(0, -150, -200);
-    world_cam.add(
-        add_object_camera(
-            ci, Tci, Mwc, Mcw
-        )
-    );
-
-    // tree_data arvore = criar_arvore();
-    // world_cam.add(make_shared<tree>(arvore));
-    
-    // world_cam.add(make_shared<box_mesh>(point4(20, -55, -200, 1.0), 100, 20, 30, material_tampo));
-
-
-    auto box = make_shared<box_mesh>(
-    point4(0, 0, 0, 1.0),
-    100, 20, 30,
-    material_tampo
-    );
-    Transform tb;
-    vec4 eixo = vec4(0, 0, 1, 0);
-    tb.rotateArbitrary(eixo, PI / 4);
-    // tb.rotateZ(PI / 4);
-    tb.translate(20, -55, -200);
-
-    world_cam.add(
-        add_object_camera(
-            box,
-            tb,
-            Mwc,
-            Mcw
-        )
-    );
-
-    // auto box1 = make_shared<box_mesh>(
-    //     point4(0, 0, 0, 1), 100, 100, 100, material_tampo
-    // );
-    // Transform tb1;
-    // tb1.shear_yz(PI/6);
-    // tb1.translate(-10, -30, -150);
-
-    // world_cam.add(
-    //     add_object_camera(
-    //         box1,
-    //         tb1,
-    //         Mwc, 
-    //         Mcw
-    //     )
-    // );
-
-    vec4 n = unit_vector(vec4(0, 1, 0, 0)); // plano 45° entre X e Y
-        auto box2 = make_shared<box_mesh>(
-        point4(0,0,0,1),
-        40,40,40,
-        material_tampo
-    );
-
-    Transform tf1;
-    tf1.reflect_arbitrary(n);
-    tf1.translate(0, 30, -150);
-
-    Transform tf2 = tf1;
-    tf2.reflect_arbitrary(n);
-    tf2.translate(40, 0, -150);
-
-    // world_cam.add(add_object_camera(box2, tf1, Mwc, Mcw));
-    // world_cam.add(add_object_camera(box2, tf2, Mwc, Mcw));
-
-
-    // table_data m = criar_mesa();
-    // world_cam.add(make_shared<mesa>(m));
-    // Planos do cenário
-
-    world_cam.add(add_plane_camera(point4(0.0, -150, 0.0, 1.0), vec4(0.0, 1.0, 0.0, 0.0), Mwc, material_chao));
-    world_cam.add(add_plane_camera(point4(200, -150, 0.0, 1.0), vec4(-1.0, 0.0, 0.0, 0.0), Mwc, material_plano1));
-    world_cam.add(add_plane_camera(point4(200, -150, -400, 1.0), vec4(0.0, 0.0, 1.0, 0.0), Mwc, material_plano1));
-    world_cam.add(add_plane_camera(point4(-200, -150, 0.0, 1.0), vec4(1.0, 0.0, 0.0, 0.0), Mwc, material_plano1));
-    world_cam.add(add_plane_camera(point4(0.0, 150, 0.0, 1.0), vec4(0.0, -1.0, 0.0, 0.0), Mwc, material_teto));
-    
+    world_cam.clear();
+    montar_sao_joao(world_cam, Mwc, Mcw);
 
     color I_A(0.3, 0.3, 0.3, 0.0);
     color I_F(0.7, 0.7, 0.7, 0.0);
@@ -211,12 +116,10 @@ void raycasting(void){
             vec4 dir = unit_vector(Pc - Ec); // direção do raio
             ray r(Ec, dir);
 
-            /*  Projeção ortográfica
-                vec4 dir(0, 0, -1);
-                ray r(pixelPos, dir);
-            */
+            // Projeção ortográfica
+            // ray r = generate_ray_ortografica(l, c);
 
-            color pixel_color = luz_pontual(r, world_cam, point4(-100, 140, -20, 1), I_A, I_F); // ok
+            color pixel_color = luz_pontual(r, world_cam, moon_direction_cam, I_A, I_F); // ok
             // color pixel_color = luz_spot(r, world_cam, point4(0, 0, 0, 1), unit_vector(vec4(0, 0, -1, 0)), PI / 6, I_A, I_F);
             // color pixel_color = ray_color_dir(r, world_cam, unit_vector(vec4(0, 0, -1, 0)), I_A, I_F); //ok
             makePixel(l, c, pixel_color, nLin, nCol, PixelBuffer);

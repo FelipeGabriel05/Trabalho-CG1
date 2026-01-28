@@ -14,7 +14,12 @@ color ray_color_dir(
     const double eps = 1e-4;
 
     if (!world.hit(r, eps, std::numeric_limits<double>::infinity(), rec)) {
-        return color(0,0,0,0);
+        vec4 unit_direction = unit_vector(r.direction());
+        double t = 0.5 * (unit_direction.y() + 1.0);
+
+        // Interpolação linear para gradiente (Azul Noturno)
+        return (1.0 - t) * color(0.1, 0.1, 0.4, 1.0)  // Cor do Horizonte
+             + t * color(0.02, 0.02, 0.1, 1.0);     // Cor do Zênite
     }
 
     color base_color = rec.mat->tex 
