@@ -13,6 +13,10 @@ class plane : public hittable {
             std::shared_ptr<material> m
         ) : p(ponto), n(unit_vector(normal)), mat(m) {}
 
+        std::shared_ptr<material> get_material() const override {
+            return mat;
+        }
+
         bool hit(const ray& r, double ray_tmin, double ray_tmax, hit_record& rec) const override  {
             double denominador = dot(r.direction(), n);
             if (std::abs(denominador) < 1e-8) {
@@ -28,6 +32,7 @@ class plane : public hittable {
             rec.t = t;
             rec.p = r.at(t);
             rec.mat = mat;
+            rec.obj = this;
 
             if (dot(r.direction(), n) > 0.0) {
                 rec.normal = -n;
@@ -50,6 +55,10 @@ class plane : public hittable {
             rec.v = v;
 
             return true;
+        }
+
+        ObjectType type() const override {
+            return ObjectType::Plane;
         }
 
     private:

@@ -1,5 +1,5 @@
 #ifndef OBJETOS_CENARIO_H
-#define OBJECTOS_CENARIO_H
+#define OBJETOS_CENARIO_H
 #include "structs_cena.h"
 #include "materiais_cenario.h"
 

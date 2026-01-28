@@ -26,6 +26,11 @@ class cilindro : public hittable {
             centroTopo(centroBase + u*h),
             m(m) {}
 
+        std::shared_ptr<material> mat;
+        std::shared_ptr<material> get_material() const override {
+            return mat;
+        }
+
         bool hit(const ray& r, double ray_tmin, double ray_tmax, hit_record& hr) const override {
             bool hit_anything = false;
             double closest_t = ray_tmax;
@@ -109,6 +114,7 @@ class cilindro : public hittable {
                 // cálculo da normal
                 b_rec.normal = unit_vector((p - centroBase) - dot(p - centroBase, u) * u);
                 b_rec.mat = m;
+                b_rec.obj = this;
             }
 
             if (hit) {
@@ -139,6 +145,7 @@ class cilindro : public hittable {
             temp_rec.p = p;
             temp_rec.normal = normal;
             temp_rec.mat = m;
+            temp_rec.obj = this;
 
             return true;
         }
@@ -164,8 +171,12 @@ class cilindro : public hittable {
             temp_rec.p = p;
             temp_rec.normal = normal;
             temp_rec.mat = m;
-
+            temp_rec.obj = this;
             return true;
+        }
+
+        ObjectType type() const override {
+            return ObjectType::Cilindro;
         }
 };
 

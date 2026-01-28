@@ -20,6 +20,10 @@ class box_mesh : public hittable{
             build();
         }
 
+        std::shared_ptr<material> get_material() const override {
+            return mat;
+        }
+
         bool hit(const ray& r, double tmin, double tmax, hit_record& rec)  const override{
             bool hit_any = false;
             double closest = tmax;
@@ -28,10 +32,16 @@ class box_mesh : public hittable{
                 if(tri->hit(r,tmin,closest,rec)){
                     hit_any = true;
                     closest = rec.t;
+                    rec.obj = this;
                 }
             }
             return hit_any;
         }
+
+        ObjectType type() const override {
+            return ObjectType::Mesh;
+        }
+
 
     private:
         point4 center;

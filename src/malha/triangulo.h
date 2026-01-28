@@ -68,6 +68,10 @@ class triangulo : public hittable {
             return true;
         }
 
+        ObjectType type() const override {
+            return ObjectType::Unknown;
+        }
+
         private:
         int i0;
         int i1;

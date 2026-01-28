@@ -26,9 +26,19 @@ class cube_mesh : public hittable{
                 if(tri->hit(r,tmin,closest,rec)){
                     hit_any = true;
                     closest = rec.t;
+                    rec.obj = this;
                 }
             }
             return hit_any;
+        }
+
+        std::shared_ptr<material> mat;
+        std::shared_ptr<material> get_material() const override {
+            return mat;
+        }
+
+        ObjectType type() const override {
+            return ObjectType::Mesh;
         }
 
     private:

@@ -15,6 +15,10 @@ class sphere : public hittable {
         std::shared_ptr<material> m
     ) : center(center), radius(std::fmax(0,radius)), mat(m) {}
 
+    std::shared_ptr<material> get_material() const override {
+        return mat;
+    }
+
     bool hit(const ray& r, double ray_tmin, double ray_tmax, hit_record& rec) const override {
         vec4 oc = center - r.origin();
         auto a = r.direction().length_squared();
@@ -39,8 +43,13 @@ class sphere : public hittable {
         rec.p = r.at(rec.t);    
         rec.normal = (rec.p - center) / radius;
         rec.mat = mat;
+        rec.obj = this;
 
         return true;
+    }
+
+    ObjectType type() const override {
+        return ObjectType::Sphere;
     }
 
   private:

@@ -25,6 +25,12 @@ class cone : public hittable {
             cos2_theta( (h*h) / (h*h + raio*raio) ), // pré-calcula cos^2(theta)
             m(m) {}
 
+
+        std::shared_ptr<material> mat;
+        std::shared_ptr<material> get_material() const override {
+            return mat;
+        }
+
         bool hit(const ray& r, double ray_tmin, double ray_tmax, hit_record& hr) const override {
             bool hit_anything = false;
             double closest_t = ray_tmax;
@@ -111,6 +117,7 @@ class cone : public hittable {
                 rec.t = t;
                 rec.p = P;
                 rec.normal = normal;
+                rec.obj = this;
                 rec.mat = m;
             }
 
@@ -138,7 +145,12 @@ class cone : public hittable {
             temp_rec.p = p;
             temp_rec.normal = normal;
             temp_rec.mat = m;
+            temp_rec.obj = this;
             return true;
+        }
+
+        ObjectType type() const override {
+            return ObjectType::Cone;
         }
 };
 

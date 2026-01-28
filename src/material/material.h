@@ -12,7 +12,7 @@ class material {
         int shininess;
 
     material(const color& ka, const color& kdif, const color& kesp, int m, std::shared_ptr<texture> t = nullptr)
-        : K_amb(ka), K_dif(kdif), K_esp(kesp), shininess(m), tex(t) {}
+        : tex(t), K_amb(ka), K_dif(kdif), K_esp(kesp), shininess(m) {}
 
     color albedo(double u, double v, const point4& p) const {
         if (tex)

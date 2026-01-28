@@ -19,17 +19,24 @@ public:
     }
 
     bool hit(const ray& r, double t_min, double t_max, hit_record& rec) const override {
+        hit_record temp;
         bool hit_anything = false;
         double closest = t_max;
         
         for(const auto& tri : triangles) {
             if(tri->hit(r,t_min,closest,rec)) {
                 hit_anything = true;
-                closest = rec.t;
+                closest = temp.t;
+                rec = temp;
+                rec.obj = this;
             }
         }
 
         return hit_anything;
+    }
+
+    ObjectType type() const override {
+        return ObjectType::Mesh;
     }
 
 private:

@@ -75,6 +75,9 @@ class Transform {
         }
 
         void reflect_arbitrary(vec4 n) {
+            // mat4 R = m_reflect_arbitrary(n);
+            // M = R * M;
+            // Minv = Minv * R; // reflexão é sua própria inversa
             M = m_reflect_arbitrary(n) * M;
             Minv = M;
         }
@@ -122,6 +125,14 @@ public:
         );
         rec.normal = unit_vector(n);
         return true;
+    }
+
+    std::shared_ptr<material> get_material() const override {
+        return object->get_material();
+    }
+
+    ObjectType type() const override {
+        return object->type();
     }
 };
 
