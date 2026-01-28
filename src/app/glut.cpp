@@ -6,7 +6,7 @@
 #include "../objects/cone.h"
 #include "../objects/plane.h"
 #include "../malha/mesh_object.h"
-
+#define PI 3.14159265358979324
 extern int nLin;
 extern int nCol;
 extern GLubyte* PixelBuffer;
@@ -14,6 +14,11 @@ extern hittable_list world_cam;
 extern double xmin, xmax, ymin, ymax;
 extern double dJanela;
 extern bool needs_render;
+extern Projecao proj;
+extern double alpha;
+extern double L;
+extern CenaCamera cenaAtual;
+
 
 double clamp(double x, double min, double max) {
     if (x < min) return min;
@@ -52,11 +57,18 @@ void mouse_click(int button, int state, int x, int y)
     int l = y;
     int c = x;
 
-    // Mesma lógica do render
-    point4 Ec(0, 0, 0, 1);
-    point4 Pc = pixel_to_camera(l, c);
-    vec4 dir = unit_vector(Pc - Ec);
-    ray r(Ec, dir);
+    ray r;
+    if (proj == Projecao::PERSPECTIVA) {
+        point4 Ec(0, 0, 0, 1);
+        point4 Pc = pixel_to_camera(l, c);
+        vec4 dir = unit_vector(Pc - Ec);
+        r = ray(Ec, dir);
+    }
+    else if (proj == Projecao::ORTOGRAFICA) { // ORTOGRAFICA
+        r = generate_ray_ortografica(l, c);
+    } else {
+        r = generate_ray_obliqua(l, c, alpha, L);
+    }
 
     hit_record rec;
 
@@ -100,8 +112,61 @@ void mouse_click(int button, int state, int x, int y)
 }
 
 void keyboard(unsigned char key, int, int) {
-    if (key == 'x' || key == 'X')
+    switch (key) {
+
+    case 'x':
+    case 'X':
         exit(0);
+        break;
+
+    // Perspectiva
+    case 'p':
+    case 'P':
+        proj = Projecao::PERSPECTIVA;
+        needs_render = true;
+        glutPostRedisplay();
+        break;
+
+    // Ortográfica
+    case 'o':
+    case 'O':
+        proj = Projecao::ORTOGRAFICA;
+        needs_render = true;
+        glutPostRedisplay();
+        break;
+
+    // Oblíqua
+    case 'b':
+    case 'B':
+        proj = Projecao::OBLIQUA;
+        needs_render = true;
+        glutPostRedisplay();
+        break;
+
+    case '1':
+        cenaAtual = CenaCamera::CENA1_FRONTAL;
+        needs_render = true;
+        glutPostRedisplay();
+        break;
+
+    case '2':
+        cenaAtual = CenaCamera::CENA2_QUINA;
+        needs_render = true;
+        glutPostRedisplay();
+        break;
+
+    case '3':
+        cenaAtual = CenaCamera::CENA3_AEREA;
+        needs_render = true;
+        glutPostRedisplay();
+        break;    
+
+    case '4':
+        cenaAtual = CenaCamera::CENA4_NORMAL;
+        needs_render = true;
+        glutPostRedisplay();
+        break;    
+    }
 }
 
 void cleanup() {

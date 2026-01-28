@@ -5,6 +5,14 @@
 #include "../colors/color.h"
 #include "../objects/hittable.h"
 #include "../objects/hittable_lists.h"
+enum class Projecao { PERSPECTIVA, ORTOGRAFICA, OBLIQUA };
+
+enum class CenaCamera {
+    CENA1_FRONTAL = 1,
+    CENA2_QUINA   = 2,
+    CENA3_AEREA   = 3,
+    CENA4_NORMAL = 4
+};
 
 double clamp(double x, double min, double max);
 
@@ -19,7 +27,7 @@ void makePixel(
 
 void mouse_click(int button, int state, int x, int y);
 
-// callbacks GLUT (assinaturas corretas!)
+// callbacks GLUT (assinaturas)
 void keyboard(unsigned char key, int x, int y);
 void cleanup();
 

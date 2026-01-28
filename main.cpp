@@ -34,9 +34,15 @@ hittable_list* g_world = nullptr;
 double xmin, xmax, ymin, ymax;
 double dJanela;
 
-point4 E;
-vec4 ic, jc, kc;
+double alpha;
+double L;
 
+point4 E;
+point4 AT;
+vec4 ic, jc, kc;
+Projecao proj = Projecao::PERSPECTIVA;
+
+CenaCamera cenaAtual = CenaCamera::CENA4_NORMAL;
 
 void raycasting(void){
 
@@ -54,23 +60,58 @@ void raycasting(void){
         0
     );
 
-    // Definindo os parâmetros (FOV)
-    double fov = PI/2;   // 90 graus (campo de visão horizontal)
     double aspect = (double)nCol / (double)nLin;  // razão de aspecto
-    dJanela = 40.0;   // distância da janela (plano de projeção)
-
-    double wJanela = 2.0 * dJanela * tan(fov / 2.0);
-    double hJanela = wJanela / aspect;
-
-    xmin = -wJanela / 2.0;
-    xmax =  wJanela / 2.0;
-    ymin = -hJanela / 2.0;
-    ymax =  hJanela / 2.0;
     
-    // -------- Câmera -------------
-    E = point4(250, 150, -200, 1);
-    point4 AT(250, 80, 400, 1);
     vec4 Pup(0, 1, 0, 0);
+
+    switch (cenaAtual) {
+
+        case CenaCamera::CENA1_FRONTAL:
+            E  = point4(250, 150, -500, 1);
+            AT = point4(250, 150, 400, 1);
+            Pup = vec4(0, 1, 0, 0);
+            dJanela = 40.0;
+            break;
+
+        case CenaCamera::CENA2_QUINA:
+            E  = point4(0, 150, 0, 1);
+            AT = point4(250, 150, 400, 1);
+            Pup = vec4(0, 1, 0, 0);
+            dJanela = 50.0;
+            break;
+
+        case CenaCamera::CENA3_AEREA:
+            E  = point4(50, 600, -200, 1);
+            AT = point4(250, 0, 400, 1);
+            Pup = vec4(0, 1, 0, 0);
+            dJanela = 45.0;
+            break;
+        case CenaCamera::CENA4_NORMAL:
+            E = point4(250, 150, -200, 1);
+            AT = point4(250, 80, 400, 1);
+            Pup = vec4(0, 1, 0, 0);
+            dJanela = 40.0;   // distância da janela (plano de projeção)
+            break;
+    }
+
+    if (proj == Projecao::PERSPECTIVA) {
+        double fov = PI / 2.0; // 90 graus
+        double wJanela = 2.0 * dJanela * tan(fov / 2.0);
+        double hJanela = wJanela / aspect;
+
+        xmin = -wJanela / 2.0;
+        xmax =  wJanela / 2.0;
+        ymin = -hJanela / 2.0;
+        ymax =  hJanela / 2.0;
+    } else if (proj == Projecao::ORTOGRAFICA || proj == Projecao::OBLIQUA) {
+        double ortho_height = 900.0;
+        double ortho_width  = ortho_height * aspect;
+
+        xmin = -ortho_width  / 2.0;
+        xmax =  ortho_width  / 2.0;
+        ymin = -ortho_height / 2.0;
+        ymax =  ortho_height / 2.0;
+    }
 
     // Base da câmera
     kc = unit_vector(E - AT);
@@ -95,10 +136,8 @@ void raycasting(void){
         0,      0,      0,      1
     );
 
-    //Config da Luz Direcional (lua)
-    vec4 moon_direction_world = unit_vector(vec4(0.2, 1.0, 0.5, 0));
-    vec4 moon_direction_cam = unit_vector(Mwc * moon_direction_world);
-
+    //Config da posição da luz (lua)
+    point4 luz_pos = point4(170, 900, -150, 1);
 
     // cena
     g_world = &world_cam;
@@ -106,22 +145,31 @@ void raycasting(void){
     world_cam.clear();
     montar_sao_joao(world_cam, Mwc, Mcw);
 
-    color I_A(0.3, 0.3, 0.3, 0.0);
-    color I_F(0.7, 0.7, 0.7, 0.0);
+    color I_A(0.3, 0.3, 0.4, 0.0);
+    color I_F(0.7, 0.7, 0.8, 0.0);
     // Loop linhas e colunas
     for (int l = 0; l < nLin; l++) {
         for (int c = 0; c < nCol; c++) {
-            point4 Ec(0, 0, 0, 1);
-            point4 Pc = pixel_to_camera(l, c);
-            vec4 dir = unit_vector(Pc - Ec); // direção do raio
-            ray r(Ec, dir);
+            ray r;
+            if (proj == Projecao::PERSPECTIVA) {
+                // perspectiva (seu jeito antigo)
+                point4 Ec(0, 0, 0, 1);
+                point4 Pc = pixel_to_camera(l, c);
+                vec4 dir = unit_vector(Pc - Ec);
+                r = ray(Ec, dir);
+            }
+            else if(proj == Projecao::ORTOGRAFICA) {
+                // ortográfica
+                r = generate_ray_ortografica(l, c);
+            } else{
+                alpha = PI / 4.0; // 45 graus
+                L = 0.5;          // cabinet (use 1.0 pra cavaleira)
+                r = generate_ray_obliqua(l, c, alpha, L);
+            }
 
-            // Projeção ortográfica
-            // ray r = generate_ray_ortografica(l, c);
-
-            color pixel_color = luz_pontual(r, world_cam, moon_direction_cam, I_A, I_F); // ok
-            // color pixel_color = luz_spot(r, world_cam, point4(0, 0, 0, 1), unit_vector(vec4(0, 0, -1, 0)), PI / 6, I_A, I_F);
-            // color pixel_color = ray_color_dir(r, world_cam, unit_vector(vec4(0, 0, -1, 0)), I_A, I_F); //ok
+            color pixel_color = luz_pontual(r, world_cam, luz_pos, I_A, I_F); // ok
+            // color pixel_color = luz_spot(r, world_cam, point4(250, 250, 250, 1), unit_vector(vec4(0, 0, -1, 0)), PI / 6, I_A, I_F);
+            // color pixel_color = ray_color_dir(r, world_cam, unit_vector(vec4(1, 1, 1, 0)), I_A, I_F); //ok
             makePixel(l, c, pixel_color, nLin, nCol, PixelBuffer);
         }
     }
@@ -146,7 +194,7 @@ int main(int argc, char **argv) {
     glutInitWindowSize(nCol, nLin);
     glutInitWindowPosition(0, 0);
 
-    glutCreateWindow("Trabalho final");
+    glutCreateWindow("Cenario de Sao Joao - Noite");
     
     glutKeyboardFunc(keyboard);
     glutDisplayFunc(display);
