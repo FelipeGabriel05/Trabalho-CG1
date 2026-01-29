@@ -5,12 +5,7 @@ color luz_pontual(const ray& r, const hittable& world, const point4& light_pos, 
 
     double tmin = 0.001;
     if (!world.hit(r, tmin, std::numeric_limits<double>::infinity(), rec)) {
-        // vec4 unit_direction = unit_vector(r.direction());
-        // double t = 0.5 * (unit_direction.y() + 1.0);
-        // // Interpolação linear para gradiente (Azul Noturno)
-        // return (1.0 - t) * color(0.1, 0.1, 0.4, 1.0)  // Cor do Horizonte
-        //      + t * color(0.02, 0.02, 0.1, 1.0);     // Cor do Zênite
-        return color(0.1, 0.1, 0.7, 1.0);  // Cor do Horizonte
+        return color(0.0, 0.0, 0.0, 0.0);
     }
 
     color base_color;

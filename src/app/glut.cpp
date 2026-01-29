@@ -86,7 +86,7 @@ void mouse_click(int button, int state, int x, int y)
    // Converte de câmera → mundo
     point4 p_world = Mcw * rec.p;
 
-    std::cout << "\n Coordenadas no MUNDO\n";
+    std::cout << "\n  Coordenadas no MUNDO\n";
     std::cout << "x = " << p_world.x() << "\n";
     std::cout << "y = " << p_world.y() << "\n";
     std::cout << "z = " << p_world.z() << "\n";

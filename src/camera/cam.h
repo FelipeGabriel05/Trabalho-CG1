@@ -40,6 +40,7 @@ inline ray generate_ray_ortografica(int i, int j){
     double x = xmin + Dx * (j + 0.5);
     double y = ymax - Dy * (i + 0.5);
 
+
     point4 origin(x, y, 0, 1);
     vec4 dir(0, 0, -1, 0);
 

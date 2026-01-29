@@ -105,7 +105,8 @@ void raycasting(void){
         xmax =  wJanela / 2.0;
         ymin = -hJanela / 2.0;
         ymax =  hJanela / 2.0;
-    } else if (proj == Projecao::ORTOGRAFICA || proj == Projecao::OBLIQUA) {
+    } 
+    if (proj == Projecao::ORTOGRAFICA) {
         double ortho_height = 900.0;
         double ortho_width  = ortho_height * aspect;
 
@@ -113,6 +114,22 @@ void raycasting(void){
         xmax =  ortho_width  / 2.0;
         ymin = -ortho_height / 2.0;
         ymax =  ortho_height / 2.0;
+    } 
+    if(proj == Projecao::OBLIQUA) {
+        double ortho_height = 900.0;
+        double ortho_width  = ortho_height * aspect;
+        double z_medio = 400.0;
+        double theta = PI / 4.0;
+        double alpha = 0.5 * cos(theta);
+        double beta  = 0.5 * sin(theta);
+
+        double dx = alpha * z_medio;
+        double dy = beta  * z_medio;
+
+        xmin = -ortho_width  / 2.0 - dx;
+        xmax =  ortho_width  / 2.0 - dx;
+        ymin = -ortho_height / 2.0 - dy;
+        ymax =  ortho_height / 2.0 - dy;
     }
 
     // Base da câmera
@@ -190,9 +207,9 @@ void raycasting(void){
                 r = generate_ray_obliqua(l, c, alpha, L);
             }
 
-            // color pixel_color = luz_pontual(r, world_cam, luz_pos, I_A, I_F); // ok
+            color pixel_color = luz_pontual(r, world_cam, luz_pos, I_A, I_F); // ok
             // color pixel_color = luz_spot(r, world_cam, point4(0, 0, 50, 1), unit_vector(vec4(0, 0, -1, 0)), PI / 6, I_A, I_F);
-            color pixel_color = ray_color_dir(r, world_cam, unit_vector(vec4(1, 1, 1, 0)), I_A, I_F); //ok
+            // color pixel_color = ray_color_dir(r, world_cam, unit_vector(vec4(1, 1, 1, 0)), I_A, I_F); //ok
             makePixel(l, c, pixel_color, nLin, nCol, PixelBuffer);
         }
     }
