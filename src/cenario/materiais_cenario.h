@@ -20,11 +20,10 @@ auto material_plano1 = std::make_shared<material>(
 auto tex_chao = std::make_shared<image_texture>("madeira.jpg");
 // material com textura
 auto material_chao = std::make_shared<material>(
-    color(.1,.1,.1, 0),
-    color(1,1,1, 0),
-    color(0,0,0, 0),
-    0,
-    tex_chao
+    color(0.2, 0.2, 0.2, 0), //coeficiente ambiente
+    color(0.1,0.7,0.1, 0),    //coeficiente difuso
+    color(0,0,0, 0),   // coeficiente especular
+    0
 );
 
 auto material_teto = std::make_shared<material>(
@@ -38,6 +37,11 @@ auto material_suporte = std::make_shared<material>(
 auto material_tampo = std::make_shared<material>(
     color(1.0, 0.27, 0.0, 0.0), color(1.0, 0.27, 0.0, 0.0), color(1.0, 0.27, 0.0, 0.0), 1.0
 );
+
+auto material_rot = std::make_shared<material>(
+    color(1.0, 0.27, 0.0, 0.0), color(1.0, 0.0, 0.3, 0.0), color(1.0, 0.0, 0.0, 0.0), 1.0
+);
+
 
 auto material_cone = std::make_shared<material>(
     color(0.0, 1.0, 0.498, 0.0), color(0.0, 1.0, 0.498, 0.0), color(0.0, 1.0, 0.498, 0.0), 1

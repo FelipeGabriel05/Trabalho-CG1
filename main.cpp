@@ -41,6 +41,8 @@ point4 E;
 point4 AT;
 vec4 ic, jc, kc;
 Projecao proj = Projecao::PERSPECTIVA;
+mat4 Mwc;
+mat4 Mcw;
 
 CenaCamera cenaAtual = CenaCamera::CENA4_NORMAL;
 
@@ -122,14 +124,14 @@ void raycasting(void){
     // world_cam.clear();
     
     // Matriz mundo -> câmera
-    mat4 Mwc (
+    Mwc = mat4(
         ic.x(), ic.y(), ic.z(), -dot(ic, E),
         jc.x(), jc.y(), jc.z(), -dot(jc, E),
         kc.x(), kc.y(), kc.z(), -dot(kc, E),
         0,      0,      0,      1
     ); 
 
-    mat4 Mcw(
+    Mcw = mat4(
         ic.x(), jc.x(), kc.x(), E.x(),
         ic.y(), jc.y(), kc.y(), E.y(),
         ic.z(), jc.z(), kc.z(), E.z(),
@@ -141,8 +143,29 @@ void raycasting(void){
 
     // cena
     g_world = &world_cam;
+    auto box1 = std::make_shared<box_mesh>(point4(0, 0, 0, 1), 20, 5, 10, material_tampo);
+    Transform tbox1;
+    tbox1.scale(5, 5, 5);
+    tbox1.shear_xy(PI / 4); // cisalhamento na direção x no plano xy.
+    tbox1.translate(371, 3, 30);
+    world_cam.add(add_object_camera(box1, tbox1, Mwc, Mcw));
 
-    world_cam.clear();
+    auto boxR = std::make_shared<box_mesh>(point4(0, 0, 0, 1), 30, 5, 50, material_suporte);
+    vec4 n = unit_vector(vec4(0, 1, 1, 0));
+    Transform tboxR;
+    tboxR.reflect_arbitrary(n);
+    tboxR.translate(205, 0, 20);
+    world_cam.add(add_object_camera(boxR, tboxR, Mwc, Mcw));
+
+    auto rot = std::make_shared<box_mesh>(point4(0, 0, 0, 1), 40, 6, 80, material_rot);
+    Transform trot;
+    vec4 u = unit_vector(vec4(0, 1, 1, 0));
+    trot.rotateArbitrary(u, PI / 6);
+    trot.translate(120, 100, 30);
+    world_cam.add(add_object_camera(rot, trot, Mwc, Mcw));
+
+    world_cam.add(add_plane_camera(point4(0.0, 0.0, 800.0, 1.0), vec4(0.0, 0.0, -1.0, 0.0), Mwc, material_plano1));
+
     montar_sao_joao(world_cam, Mwc, Mcw);
 
     color I_A(0.3, 0.3, 0.4, 0.0);
@@ -167,9 +190,9 @@ void raycasting(void){
                 r = generate_ray_obliqua(l, c, alpha, L);
             }
 
-            color pixel_color = luz_pontual(r, world_cam, luz_pos, I_A, I_F); // ok
-            // color pixel_color = luz_spot(r, world_cam, point4(250, 250, 250, 1), unit_vector(vec4(0, 0, -1, 0)), PI / 6, I_A, I_F);
-            // color pixel_color = ray_color_dir(r, world_cam, unit_vector(vec4(1, 1, 1, 0)), I_A, I_F); //ok
+            // color pixel_color = luz_pontual(r, world_cam, luz_pos, I_A, I_F); // ok
+            // color pixel_color = luz_spot(r, world_cam, point4(0, 0, 50, 1), unit_vector(vec4(0, 0, -1, 0)), PI / 6, I_A, I_F);
+            color pixel_color = ray_color_dir(r, world_cam, unit_vector(vec4(1, 1, 1, 0)), I_A, I_F); //ok
             makePixel(l, c, pixel_color, nLin, nCol, PixelBuffer);
         }
     }

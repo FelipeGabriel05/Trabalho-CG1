@@ -69,7 +69,8 @@ void montar_sao_joao(hittable_list& world, const mat4& Mwc, const mat4& Mcw) {
 
     // Andar 2 (Empilhado)
     auto andar2 = std::make_shared<box_mesh>(point4(0,0,0,1), larg_2, alt_2, prof_2, mat_parede);
-    Transform t_a2; t_a2.translate(cx, alt_1, cz); 
+    Transform t_a2; 
+    t_a2.translate(cx, alt_1, cz); 
     world.add(add_object_camera(andar2, t_a2, Mwc, Mcw));
 
     // Telhado (Empilhado)
@@ -183,7 +184,10 @@ void montar_sao_joao(hittable_list& world, const mat4& Mwc, const mat4& Mcw) {
     Transform t_p2e; t_p2e.translate(cx - x2, y_base_poste, z2); 
     world.add(add_object_camera(poste_geo, t_p2e, Mwc, Mcw));
     
-    Transform t_l2e; t_l2e.translate(cx - x2, y_topo_esfera, z2); 
+    Transform t_l2e; 
+    // Aplicação da escala
+    t_l2e.scale(5, 5, 5);
+    t_l2e.translate(cx - x2, y_topo_esfera, z2); 
     world.add(add_object_camera(lampada_geo, t_l2e, Mwc, Mcw));
 
     Transform t_p2d; t_p2d.translate(cx + x2, y_base_poste, z2); 
@@ -199,51 +203,51 @@ void montar_sao_joao(hittable_list& world, const mat4& Mwc, const mat4& Mcw) {
     auto mat_b_amarelo  = std::make_shared<material>(color(0.9, 0.9, 0.1, 0), color(0.9, 0.9, 0.1, 0), color(0,0,0,0), 0);
     auto mat_b_azul     = std::make_shared<material>(color(0.1, 0.2, 0.9, 0), color(0.1, 0.2, 0.9, 0), color(0,0,0,0), 0);
 
-    double y_corda = y_topo_esfera; 
+    // double y_corda = y_topo_esfera; 
 
     // Laterais
-    int total_lat = 20; 
-    for (int lado = 0; lado < 2; lado++) { 
-        for (int i = 0; i <= total_lat; i++) {
-            double t = (double)i / total_lat;
-            double sinal = (lado == 0) ? -1.0 : 1.0;
+    // int total_lat = 20; 
+    // for (int lado = 0; lado < 2; lado++) { 
+    //     for (int i = 0; i <= total_lat; i++) {
+    //         double t = (double)i / total_lat;
+    //         double sinal = (lado == 0) ? -1.0 : 1.0;
             
-            double bx = (1.0 - t) * (cx + (sinal * x1)) + t * (cx + (sinal * x2));
-            double bz = (1.0 - t) * z1 + t * z2;
-            double by = y_corda - (12.0 * sin(t * PI)); 
+    //         double bx = (1.0 - t) * (cx + (sinal * x1)) + t * (cx + (sinal * x2));
+    //         double bz = (1.0 - t) * z1 + t * z2;
+    //         double by = y_corda - (12.0 * sin(t * PI)); 
 
-            if (by < 1.0) by = 1.0;
+    //         if (by < 1.0) by = 1.0;
 
-            auto mat_atual = mat_b_vermelho;
-            if (i % 4 == 1) mat_atual = mat_b_verde;
-            if (i % 4 == 2) mat_atual = mat_b_amarelo;
-            if (i % 4 == 3) mat_atual = mat_b_azul;
+    //         auto mat_atual = mat_b_vermelho;
+    //         if (i % 4 == 1) mat_atual = mat_b_verde;
+    //         if (i % 4 == 2) mat_atual = mat_b_amarelo;
+    //         if (i % 4 == 3) mat_atual = mat_b_azul;
 
-            auto bandeira = std::make_shared<box_mesh>(point4(0,0,0,1), 5, 5, 1, mat_atual);
-            Transform t_ban; t_ban.rotateZ(PI / 4.0); t_ban.translate(bx, by, bz);
-            if (i > 0 && i < total_lat) world.add(add_object_camera(bandeira, t_ban, Mwc, Mcw));
-        }
-    }
+    //         auto bandeira = std::make_shared<box_mesh>(point4(0,0,0,1), 5, 5, 1, mat_atual);
+    //         Transform t_ban; t_ban.rotateZ(PI / 4.0); t_ban.translate(bx, by, bz);
+    //         if (i > 0 && i < total_lat) world.add(add_object_camera(bandeira, t_ban, Mwc, Mcw));
+    //     }
+    // }
 
     // Fundo
-    int total_fundo = 25; 
-    for (int i = 0; i <= total_fundo; i++) {
-        double t = (double)i / total_fundo;
-        double bx = (1.0 - t) * (cx - x1) + t * (cx + x1);
-        double bz = z1; 
-        double by = y_corda - (16.0 * sin(t * PI)); 
+    // int total_fundo = 25; 
+    // for (int i = 0; i <= total_fundo; i++) {
+    //     double t = (double)i / total_fundo;
+    //     double bx = (1.0 - t) * (cx - x1) + t * (cx + x1);
+    //     double bz = z1; 
+    //     double by = y_corda - (16.0 * sin(t * PI)); 
 
-        if (by < 1.0) by = 1.0;
+    //     if (by < 1.0) by = 1.0;
 
-        auto mat_atual = mat_b_vermelho;
-        if (i % 4 == 1) mat_atual = mat_b_verde;
-        if (i % 4 == 2) mat_atual = mat_b_amarelo;
-        if (i % 4 == 3) mat_atual = mat_b_azul;
+    //     auto mat_atual = mat_b_vermelho;
+    //     if (i % 4 == 1) mat_atual = mat_b_verde;
+    //     if (i % 4 == 2) mat_atual = mat_b_amarelo;
+    //     if (i % 4 == 3) mat_atual = mat_b_azul;
 
-        auto bandeira = std::make_shared<box_mesh>(point4(0,0,0,1), 5, 5, 1, mat_atual);
-        Transform t_ban; t_ban.rotateZ(PI / 4.0); t_ban.translate(bx, by, bz);
-        if (i > 0 && i < total_fundo) world.add(add_object_camera(bandeira, t_ban, Mwc, Mcw));
-    }
+    //     auto bandeira = std::make_shared<box_mesh>(point4(0,0,0,1), 5, 5, 1, mat_atual);
+    //     Transform t_ban; t_ban.rotateZ(PI / 4.0); t_ban.translate(bx, by, bz);
+    //     if (i > 0 && i < total_fundo) world.add(add_object_camera(bandeira, t_ban, Mwc, Mcw));
+    // }
 
     //Casinhas fundo
     double casa_w = 130.0; double casa_h = 75.0; double casa_d = 85.0;

@@ -18,6 +18,7 @@ extern Projecao proj;
 extern double alpha;
 extern double L;
 extern CenaCamera cenaAtual;
+extern mat4 Mcw;
 
 
 double clamp(double x, double min, double max) {
@@ -81,6 +82,14 @@ void mouse_click(int button, int state, int x, int y)
         std::cout << "Nada selecionado\n";
         return;
     }
+
+   // Converte de câmera → mundo
+    point4 p_world = Mcw * rec.p;
+
+    std::cout << "\n Coordenadas no MUNDO\n";
+    std::cout << "x = " << p_world.x() << "\n";
+    std::cout << "y = " << p_world.y() << "\n";
+    std::cout << "z = " << p_world.z() << "\n";
 
     std::cout << "Objeto selecionado:\n";
     std::cout << "t_hit = " << rec.t << "\n";
