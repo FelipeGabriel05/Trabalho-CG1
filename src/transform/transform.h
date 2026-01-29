@@ -129,6 +129,10 @@ public:
         return object->get_material();
     }
 
+    void set_material(std::shared_ptr<material> m) override {
+        object->set_material(m);
+    }
+
     ObjectType type() const override {
         return object->type();
     }

@@ -29,11 +29,16 @@ enum class ObjectType {
 };
 
 class hittable {
+  protected:
+    std::shared_ptr<material> mat;
   public:
     virtual ~hittable() = default;
     virtual bool hit(const ray& r, double ray_tmin, double ray_tmax, hit_record& rec) const = 0;
     virtual ObjectType type() const { return ObjectType::Unknown; }
     virtual std::shared_ptr<material> get_material() const { return nullptr; }
+    virtual void set_material(std::shared_ptr<material> m) {
+      mat = m;
+    }
 };
 
 #endif

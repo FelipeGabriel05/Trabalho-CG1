@@ -18,8 +18,9 @@
 #include "src/transform/transform.h"
 #include "src/app/glut.h"
 #include "src/cenario/cenario_saojoao.h"
-
 #include "src/camera/cam.h"
+#include <thread>
+#include <mutex>
 
 #include <GL/freeglut.h>
 #define PI 3.14159265358979324
@@ -43,6 +44,11 @@ vec4 ic, jc, kc;
 Projecao proj = Projecao::PERSPECTIVA;
 mat4 Mwc;
 mat4 Mcw;
+
+double fov = PI / 2.0; // 90 graus
+double ortho_scale = 1.0;   // 1.0 = padrão
+double ortho_min   = 0.2;
+double ortho_max   = 5.0;
 
 CenaCamera cenaAtual = CenaCamera::CENA4_NORMAL;
 
@@ -97,7 +103,6 @@ void raycasting(void){
     }
 
     if (proj == Projecao::PERSPECTIVA) {
-        double fov = PI / 2.0; // 90 graus
         double wJanela = 2.0 * dJanela * tan(fov / 2.0);
         double hJanela = wJanela / aspect;
 
@@ -107,7 +112,8 @@ void raycasting(void){
         ymax =  hJanela / 2.0;
     } 
     if (proj == Projecao::ORTOGRAFICA) {
-        double ortho_height = 900.0;
+        double base_height = 900;
+        double ortho_height = base_height * ortho_scale;
         double ortho_width  = ortho_height * aspect;
 
         xmin = -ortho_width  / 2.0;
@@ -116,7 +122,13 @@ void raycasting(void){
         ymax =  ortho_height / 2.0;
     } 
     if(proj == Projecao::OBLIQUA) {
-        double ortho_height = 900.0;
+        E  = point4(320, 450, -300, 1);
+        AT = point4(320, 80, 400, 1);
+        Pup = vec4(0, 1, 0, 0);
+        dJanela = 45.0;
+        
+        double base_height = 900.0;
+        double ortho_height = base_height * ortho_scale;
         double ortho_width  = ortho_height * aspect;
         double z_medio = 400.0;
         double theta = PI / 4.0;
@@ -234,7 +246,7 @@ int main(int argc, char **argv) {
     glutInitWindowSize(nCol, nLin);
     glutInitWindowPosition(0, 0);
 
-    glutCreateWindow("Cenario de Sao Joao - Noite");
+    glutCreateWindow("Cenario de Sao Joao");
     
     glutKeyboardFunc(keyboard);
     glutDisplayFunc(display);
@@ -242,6 +254,5 @@ int main(int argc, char **argv) {
 
     // Registrar função de limpeza
     atexit(cleanup);
-
     glutMainLoop();
 }

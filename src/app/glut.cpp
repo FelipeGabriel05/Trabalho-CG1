@@ -6,6 +6,8 @@
 #include "../objects/cone.h"
 #include "../objects/plane.h"
 #include "../malha/mesh_object.h"
+#include <thread>
+#include <mutex>
 #define PI 3.14159265358979324
 extern int nLin;
 extern int nCol;
@@ -19,7 +21,11 @@ extern double alpha;
 extern double L;
 extern CenaCamera cenaAtual;
 extern mat4 Mcw;
+extern double fov;
 
+extern double ortho_scale;
+extern double ortho_min;
+extern double ortho_max;
 
 double clamp(double x, double min, double max) {
     if (x < min) return min;
@@ -128,6 +134,33 @@ void keyboard(unsigned char key, int, int) {
         exit(0);
         break;
 
+    case '+':
+        if(proj == Projecao::PERSPECTIVA) {
+            fov -= PI / 180.0 * 15; // zoom in
+            if (fov < PI / 12) {
+                fov = PI / 12;     
+            }
+        } else {
+            ortho_scale *= 0.85;   // zoom in
+            if (ortho_scale < ortho_min)
+                ortho_scale = ortho_min;
+        }
+        needs_render = true;
+        glutPostRedisplay();
+        break;
+    case '-':
+        if(proj == Projecao::PERSPECTIVA) {
+            fov += PI / 180.0 * 15; // zoom out
+            if (fov > PI * 0.9) 
+                fov = PI * 0.9;
+        } else {
+            ortho_scale *= 1.15;   // zoom out
+            if (ortho_scale > ortho_max)
+                ortho_scale = ortho_max;
+        }
+        needs_render = true;
+        glutPostRedisplay();
+        break;
     // Perspectiva
     case 'p':
     case 'P':
